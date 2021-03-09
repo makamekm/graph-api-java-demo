@@ -1,5 +1,37 @@
 package com.hendisantika.springboot.swagger.controller;
 
+import com.hendisantika.springboot.swagger.graph.Constants;
+import com.hendisantika.springboot.swagger.graph.Graph;
+import com.hendisantika.springboot.swagger.graph.Authentication;
+import com.hendisantika.springboot.swagger.graph.Authenticator;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import com.microsoft.graph.authentication.IAuthenticationProvider;
+import com.microsoft.graph.core.DefaultClientConfig;
+import com.microsoft.graph.core.IClientConfig;
+import com.microsoft.graph.httpcore.ICoreAuthenticationProvider;
+import com.microsoft.graph.models.extensions.Attachment;
+import com.microsoft.graph.models.extensions.DriveItem;
+import com.microsoft.graph.models.extensions.Group;
+import com.microsoft.graph.models.extensions.IGraphServiceClient;
+import com.microsoft.graph.models.extensions.Multipart;
+import com.microsoft.graph.models.extensions.Notebook;
+import com.microsoft.graph.models.extensions.OnenotePage;
+import com.microsoft.graph.models.extensions.OnenoteSection;
+import com.microsoft.graph.models.extensions.User;
+import com.microsoft.graph.options.HeaderOption;
+import com.microsoft.graph.options.Option;
+import com.microsoft.graph.options.QueryOption;
+import com.microsoft.graph.requests.extensions.GraphServiceClient;
+import com.microsoft.graph.requests.extensions.IDriveItemCollectionPage;
+import com.microsoft.graph.requests.extensions.IGroupCollectionPage;
+
 import com.hendisantika.springboot.swagger.model.Student;
 import com.hendisantika.springboot.swagger.service.StudentService;
 import io.swagger.annotations.*;
@@ -26,88 +58,50 @@ public class StudentController {
     @Autowired
     private StudentService studentService;
 
-    @ApiOperation(value = "Get All Student", produces = "application/json")
-    @RequestMapping(value = "/all", method = RequestMethod.GET)
-    public ResponseEntity<Object> getAllStudents() {
+    @ApiOperation(value = "Test Graph API", produces = "application/json")
+    @RequestMapping(value = "/test-graph", method = RequestMethod.GET)
+    public ResponseEntity<Object> testGraphAPI() throws Exception {
         logger.debug("Getting All students ......");
         List<Student> student = null;
-        try {
-            student = studentService.getAll();
-            logger.debug("Getting All students ...... ::");
-        } catch (Exception ex) {
-            logger.error("Error occurred in searchStudentById >>", ex, ex.getMessage());
-            return new ResponseEntity<Object>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+
+		//Get an access token for the client
+        // Authentication.initialize(Constants.clientId, Constants.authority);
+        final String accessToken = Authentication.getAccessTokenByClientCredentialGrant().accessToken();
+        System.out.println("Token: " + accessToken);
+
+        // System.out.println("Users: " + Authentication.getUsersListFromGraph(accessToken));
+        // Greet the user
+        int test = Graph.getMail(accessToken).getCurrentPage().size();
+        System.out.println("Inbox count: " + test);
+        System.out.println();
+
+        // IGraphServiceClient graphClient = GraphServiceClient.builder().authenticationProvider( authProvider ).buildClient();
+
+        // Attachment attachment = graphClient.me().messages("AAMkAGUzY5QKjAAA=").attachments("AAMkAGUzY5QKjAAABEgAQAMkpJI_X-LBFgvrv1PlZYd8=")
+        //     .buildRequest()
+        //     .get();
+
+        //GET https://graph.microsoft.com/v1.0/me/messages/AAMkAGUzY5QKjAAA=/attachments/AAMkAGUzY5QKjAAABEgAQAMkpJI_X-LBFgvrv1PlZYd8=/$value
+
+        // try (BufferedInputStream in = new BufferedInputStream(new URL(FILE_URL).openStream());
+        //     FileOutputStream fileOutputStream = new FileOutputStream(FILE_NAME)) {
+        //     byte dataBuffer[] = new byte[1024];
+        //     int bytesRead;
+        //     while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+        //         fileOutputStream.write(dataBuffer, 0, bytesRead);
+        //     }
+        // } catch (IOException e) {
+        //     // handle exception
+        // }
+        
+        //Get our IT group
+        // Option filterOption = new QueryOption("$filter", "displayName eq 'IT'");
+        // IGroupCollectionPage groups = graphClient
+        // 		.groups()
+        // 		.buildRequest(Arrays.asList(filterOption))
+        // 		.get();
+        // Group itGroup = groups.getCurrentPage().get(0);
+
         return new ResponseEntity<Object>(student, HttpStatus.OK);
-    }
-
-    @ApiOperation(value = "Search Student by studentId", produces = "application/json")
-    @RequestMapping(value = "/{studentId}", method = RequestMethod.GET)
-    public ResponseEntity<Object> searchStudentById(
-            @ApiParam(name = "studentId",
-                    value = "The Id of the Student to be viewed",
-                    required = true)
-            @PathVariable Integer studentId) {
-        logger.debug("Searching for student with studentId ::" + studentId);
-        Student student = null;
-        try {
-            student = studentService.getStudentById(studentId);
-            logger.debug("Student found with studentId ::" + studentId);
-        } catch (Exception ex) {
-            logger.error("Error occurred in searchStudentById >>", ex, ex.getMessage());
-            return new ResponseEntity<Object>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        return new ResponseEntity<Object>(student, HttpStatus.OK);
-    }
-
-    @ApiOperation(value = "Search for all Students whose age is greater than input age", produces = "application/json")
-    @RequestMapping(value = "/greaterThanAge/{age}", method = RequestMethod.GET)
-    public ResponseEntity<Object> filterStudentsByAge(
-            @ApiParam(name = "age",
-                    value = "filtering age",
-                    required = true) @PathVariable Integer age) {
-        List<Student> studentList = null;
-        try {
-            studentList = studentService.filterByAge(age);
-        } catch (Exception ex) {
-            logger.error("Error occurred in filterStudentsByAge >>", ex, ex.getMessage());
-            return new ResponseEntity<Object>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        return new ResponseEntity<Object>(studentList, HttpStatus.OK);
-    }
-
-    @ApiOperation(value = "Search for all Students who are from input city", produces = "application/json")
-    @RequestMapping(value = "/fromCity/{cityName}", method = RequestMethod.GET)
-    public ResponseEntity<Object> filterStudentsByCity(
-            @ApiParam(name = "cityName", value = "filtering city name", required = true)
-            @PathVariable String cityName) {
-        List<Student> studentList = null;
-        try {
-            studentList = studentService.filterByCity(cityName);
-        } catch (Exception ex) {
-            logger.error("Error occurred in filterStudentsByCity >>", ex, ex.getMessage());
-            return new ResponseEntity<Object>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        return new ResponseEntity<Object>(studentList, HttpStatus.OK);
-    }
-
-    @ApiOperation(value = "Search for all students who are from given city and "
-            + "whose age are greater than input age", produces = "application/json")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "schoolId", value = "School Id", required = true, dataType = "String", paramType = "header"),
-            @ApiImplicitParam(name = "age", value = "Age of Student", required = true, dataType = "Integer", paramType = "query"),
-            @ApiImplicitParam(name = "cityName", value = "City of Student", required = true, dataType = "String", paramType = "query") })
-    @RequestMapping(value = "/filterByAgeAndCity", method = RequestMethod.GET)
-    public ResponseEntity<Object> filterStudentsByAgeAndCity(@RequestHeader(name = "schoolId") String userId,
-                                                             @RequestParam Integer age,@RequestParam String cityName) {
-
-        List<Student> studentList = null;
-        try {
-            studentList = studentService.filterByAgeAndCity(age, cityName);
-        } catch (Exception ex) {
-            logger.error("Error occurred in filterStudentsByAgeAndCity >>", ex, ex.getMessage());
-            return new ResponseEntity<Object>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        return new ResponseEntity<Object>(studentList, HttpStatus.OK);
     }
 }
